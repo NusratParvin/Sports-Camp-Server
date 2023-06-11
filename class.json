@@ -4,55 +4,65 @@
       "image": "football-class.jpg",
       "seatsAvailable": 10,
       "price": 100,
-      "instructor": "John"
+      "instructor": "John",
+      "status":"Approved"
     },
     {
       "name": "Advanced Football Training",
       "image": "advanced-football.jpg",
       "seatsAvailable": 15,
       "price": 150,
-      "instructor": "John"
+      "instructor": "John",
+      "status":"Approved"
     },
     {
       "name": "Basketball Fundamentals",
       "image": "basketball-fundamentals.jpg",
       "seatsAvailable": 8,
       "price": 120,
-      "instructor": "Sarah"
+      "instructor": "Sarah",
+      "status":"Approved"
     },
     {
       "name": "Basketball Skills Development",
       "image": "skills-development.jpg",
       "seatsAvailable": 16,
       "price": 130,
-      "instructor": "Sarah"
+      "instructor": "Sarah",
+      "status":"Approved"
     },
     {
       "name": "Beginner's Swimming Class",
       "image": "beginners-swimming.jpg",
       "seatsAvailable": 12,
       "price": 90,
-      "instructor": "Michael"
+      "instructor": "Michael",
+      "status":"Approved"
     },
     {
       "name": "Advanced Swim Training",
       "image": "advanced-swim.jpg",
       "seatsAvailable": 14,
       "price": 160,
-      "instructor": "Michael"
+      "instructor": "Michael",
+      "status":"Approved"
     },
     {
       "name": "Tennis Basics",
       "image": "tennis-basics.jpg",
       "seatsAvailable": 10,
       "price": 110,
-      "instructor": "David"
+      "instructor": "David",
+      "status":"Approved"
     },
     {
       "name": "Advanced Tennis Clinic",
       "image": "advanced-tennis.jpg",
       "seatsAvailable": 12,
       "price": 180,
-      "instructor": "David"
+      "instructor": "David",
+      "status":"Approved"
     }
   ]
+
+  
