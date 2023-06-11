@@ -179,17 +179,67 @@ console.log(email);
             })
         })
 
+        // app.post('/payments', jwtVerify, async (req, res) => {
+        //     const payment = req.body
+        //     console.log(payment,'payment');
+        //     //payment inserted
+        //     const insertResult = await paymentCollection.insertOne(payment);
+
+        //     //paid class deleted from cart
+        //     const query = { _id: new ObjectId(payment.cartId)}
+        //     const deleteResult = await cartCollection.deleteOne(query)
+
+        //     //class seat decreased by one
+        //     const classId = payment.classId
+
+        //     res.send({ insertResult, deleteResult });
+        //     console.log('success');
+        // })
+
         app.post('/payments', jwtVerify, async (req, res) => {
-            const payment = req.body
-            console.log(payment,'payment');
+            const payment = req.body;
+            console.log(payment, 'payment');
+          
+            // Payment inserted
             const insertResult = await paymentCollection.insertOne(payment);
 
-            const query = { _id: new ObjectId(payment.cartId)}
-            console.log(query);
-            const deleteResult = await cartCollection.deleteOne(query)
-            res.send({ insertResult, deleteResult });
-            console.log('success');
-        })
+            //delete one seat
+            const classId = payment.classId;
+            const classQuery = { _id: new ObjectId(classId) };
+            const classUpdate = {
+              $inc: { seatsAvailable: -1, studentsEnrolled: 1 }
+            };
+            const classUpdateResult = await classesCollection.updateOne(classQuery, classUpdate);
+            
+                    
+            // Update the status field to 'Paid' in the cart collection
+            const cartId = new ObjectId(payment.cartId);
+            const cartQuery = { _id: cartId };
+            const cartUpdate = {
+              $set: { status: 'Paid' },
+              $inc: { seatsAvailable: -1 }
+            };
+            const cartOptions = { upsert: true };
+            const updateResult = await cartCollection.updateOne(cartQuery, cartUpdate, cartOptions);
+            
+          
+            res.send({ insertResult, updateResult });
+            console.log('success',updateResult);
+          });
+
+        app.get('/history', jwtVerify, async (req, res) => {
+            const email = req.decoded.email;
+            console.log(email, 'history email');
+          
+            const result = await paymentCollection
+              .find({ email: email })
+              .sort({ date: -1 }) // Sort by the 'date' field in descending order
+              .toArray();
+          
+            res.send(result);
+            console.log(result);
+          });
+       
 
         /////////////// payment related APIs/////////////////////////////////////////
 
