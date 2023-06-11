@@ -30,7 +30,7 @@ const jwtVerify = (req, res, next) => {
         if (err) {
             return res.status(401).send({ error: true, message: 'unauthorized access' })
         }
-        req.decoded = decoded; 
+        req.decoded = decoded;
         // console.log('====================>', req.decoded);
 
         next();
@@ -104,7 +104,7 @@ async function run() {
         /////////////// Cart related APIs/////////////////////////////////////////////
         app.post('/cart', async (req, res) => {
             const classData = req.body;
-            console.log(classData,'clasdata');
+            console.log(classData, 'clasdata');
             const result = await cartCollection.insertOne(classData);
             res.send(result);
             console.log(result, 'post classData');
@@ -112,7 +112,7 @@ async function run() {
 
         app.get('/cart', jwtVerify, async (req, res) => {
             const email = req.query.email;
-console.log(email);
+            console.log(email);
             if (!email) {
                 res.send([]);
             }
@@ -131,11 +131,11 @@ console.log(email);
 
         app.delete('/cart/:id', async (req, res) => {
             const id = req.params.id
-            console.log(id,'inside delete');
+            console.log(id, 'inside delete');
             const query = { _id: new ObjectId(id) }
             const result = await cartCollection.deleteOne(query)
             res.send(result)
-            console.log(result,'deleted');
+            console.log(result, 'deleted');
         })
         /////////////// Cart related APIs/////////////////////////////////////////////
 
@@ -149,6 +149,12 @@ console.log(email);
 
         })
 
+        app.get('/popClasses', async (req, res) => {
+            const result = await classesCollection.find().sort({ studentsEnrolled: -1 }).toArray();
+            res.send(result)
+
+        })
+
         /////////////// class related APIs/////////////////////////////////////////////
         /////////////// instructor related APIs/////////////////////////////////////////
         app.get('/instructors', async (req, res) => {
@@ -158,7 +164,7 @@ console.log(email);
 
         })
         /////////////// instructor related APIs/////////////////////////////////////////
-        
+
 
         /////////////// payment related APIs/////////////////////////////////////////
         app.post('/create-payment-intent', jwtVerify, async (req, res) => {
@@ -199,7 +205,7 @@ console.log(email);
         app.post('/payments', jwtVerify, async (req, res) => {
             const payment = req.body;
             console.log(payment, 'payment');
-          
+
             // Payment inserted
             const insertResult = await paymentCollection.insertOne(payment);
 
@@ -207,39 +213,43 @@ console.log(email);
             const classId = payment.classId;
             const classQuery = { _id: new ObjectId(classId) };
             const classUpdate = {
-              $inc: { seatsAvailable: -1, studentsEnrolled: 1 }
+                $inc: {
+                    seatsAvailable: -1,
+                    studentsEnrolled: 1
+                }
             };
-            const classUpdateResult = await classesCollection.updateOne(classQuery, classUpdate);
-            
-                    
+            const classUpdateResult = await classesCollection.updateOne(classQuery, classUpdate, { upsert: true });
+
+
+
             // Update the status field to 'Paid' in the cart collection
             const cartId = new ObjectId(payment.cartId);
             const cartQuery = { _id: cartId };
             const cartUpdate = {
-              $set: { status: 'Paid' },
-              $inc: { seatsAvailable: -1 }
+                $set: { status: 'Paid' },
+                $inc: { seatsAvailable: -1 }
             };
             const cartOptions = { upsert: true };
             const updateResult = await cartCollection.updateOne(cartQuery, cartUpdate, cartOptions);
-            
-          
+
+
             res.send({ insertResult, updateResult });
-            console.log('success',updateResult);
-          });
+            console.log('success', classUpdateResult);
+        });
 
         app.get('/history', jwtVerify, async (req, res) => {
             const email = req.decoded.email;
             console.log(email, 'history email');
-          
+
             const result = await paymentCollection
-              .find({ email: email })
-              .sort({ date: -1 }) // Sort by the 'date' field in descending order
-              .toArray();
-          
+                .find({ email: email })
+                .sort({ date: -1 }) // Sort by the 'date' field in descending order
+                .toArray();
+
             res.send(result);
             console.log(result);
-          });
-       
+        });
+
 
         /////////////// payment related APIs/////////////////////////////////////////
 
