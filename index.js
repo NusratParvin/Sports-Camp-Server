@@ -181,12 +181,14 @@ console.log(email);
 
         app.post('/payments', jwtVerify, async (req, res) => {
             const payment = req.body
+            console.log(payment,'payment');
             const insertResult = await paymentCollection.insertOne(payment);
 
-            const query = { _id: { $in: payment.cartItems.map(id => new ObjectId(id)) } }
-            const deleteResult = await cartCollection.deleteMany(query)
+            const query = { _id: new ObjectId(payment.cartId)}
+            console.log(query);
+            const deleteResult = await cartCollection.deleteOne(query)
             res.send({ insertResult, deleteResult });
-            // console.log(result);
+            console.log('success');
         })
 
         /////////////// payment related APIs/////////////////////////////////////////
