@@ -75,7 +75,7 @@ async function run() {
 
         ///////verification middlewares ////////
 
-          const verifyAdmin = async (req, res, next) => {
+        const verifyAdmin = async (req, res, next) => {
             const email = req.decoded.email;
             console.log(email, 'inside verify1');
             const query = { email: email }
@@ -98,7 +98,7 @@ async function run() {
             next();
         }
         ///////verification middlewares ////////
-        
+
 
         /////////////// USer related APIs/////////////////////////////////////////////
 
@@ -113,7 +113,7 @@ async function run() {
             const user = await usersCollection.findOne(query);
             const result = { role: user?.role }
             res.send(result);
-            console.log(result, 'isRole');
+            // console.log(result, 'isRole');
         })
 
         app.put('/users/:email', async (req, res) => {
@@ -131,6 +131,7 @@ async function run() {
 
         /////////////// USer related APIs/////////////////////////////////////////////
         /////////////// Cart related APIs/////////////////////////////////////////////
+
         app.post('/cart', async (req, res) => {
             const classData = req.body;
             console.log(classData, 'clasdata');
@@ -183,7 +184,7 @@ async function run() {
             res.send(result)
 
         })
-        
+
 
         // app.get('/popInstructors', async (req, res) => {
         //     try {
@@ -217,7 +218,7 @@ async function run() {
         //           }
         //         }
         //       ]).toArray();
-          
+
         //       if (result.length === 0) {
         //         res.send("No instructors found");
         //       } else {
@@ -230,58 +231,83 @@ async function run() {
         //     }
         //   });
 
-        app.post('/addClass', jwtVerify,verifyInstructor,async(req,res)=>{
-            const newClass = req.body; 
-            const newClassWithStatus = {...newClass,"status":"Pending", "studentsEnrolled": parseInt(0)}
+        app.post('/addClass', jwtVerify, verifyInstructor, async (req, res) => {
+            const newClass = req.body;
+            const newClassWithStatus = { ...newClass, "status": "Pending", "studentsEnrolled": parseInt(0), "feedback": 'No Feedback' }
             console.log(newClassWithStatus);
             const result = await classesCollection.insertOne(newClassWithStatus)
             res.send(result);
-            console.log(result,'class added');
+            console.log(result, 'class added');
+        })
+
+        app.put('/update', jwtVerify, verifyInstructor, async (req, res) => {
+            const updatedClassInfo = req.body;
+            // const updateId = req.body.id
+            const updateId = req.query.id
+console.log(updatedClassInfo,updateId);
+            const options = { upsert: true }
+            console.log(updatedClassInfo, updateId);
+            const result = await classesCollection.updateOne(
+                { _id: new ObjectId(updateId) },
+                { $set: updatedClassInfo },
+                options
+            );
+
+            res.send(result);
+            console.log(result, 'class added');
+
+        })
+
+        app.get('/update', jwtVerify, verifyInstructor, async (req, res) => {
+            const id = req.query.id
+            console.log(id);
+            const classInfo = await classesCollection.find({ _id: new ObjectId(id) }).toArray()
+            res.send(classInfo);
         })
 
         app.get('/popInstructors', async (req, res) => {
             try {
-              const result = await classesCollection.aggregate([
-                {
-                  $group: {
-                    _id: "$instructor",
-                    totalStudentsEnrolled: { $sum: "$studentsEnrolled" },
-                    classCount: { $sum: 1 }
-                  }
-                },
-                {
-                  $sort: { totalStudentsEnrolled: -1 }
+                const result = await classesCollection.aggregate([
+                    {
+                        $group: {
+                            _id: "$instructor",
+                            totalStudentsEnrolled: { $sum: "$studentsEnrolled" },
+                            classCount: { $sum: 1 }
+                        }
+                    },
+                    {
+                        $sort: { totalStudentsEnrolled: -1 }
+                    }
+                ]).toArray();
+
+                if (result.length === 0) {
+                    res.send("No instructors found");
+                } else {
+                    const instructorIds = result.map(item => item._id);
+                    const instructorsWithPhotoURL = await usersCollection.find({ name: { $in: instructorIds } }).toArray();
+                    // res.send(instructorsWithPhotoURL);
+                    const mergedResult = result.map(item => {
+                        const instructor = instructorsWithPhotoURL.find(i => i.name === item._id);
+                        return {
+                            instructorName: item._id,
+                            totalStudentsEnrolled: item.totalStudentsEnrolled,
+                            classCount: item.classCount,
+                            photoURL: instructor ? instructor.photoURL : 'No Image',
+                            email: instructor ? instructor.email : 'no mail'
+                        };
+                    });
+
+                    res.send(mergedResult);
+                    console.log(mergedResult);
                 }
-              ]).toArray();
-          
-              if (result.length === 0) {
-                res.send("No instructors found");
-              } else {
-                const instructorIds = result.map(item => item._id);
-                const instructorsWithPhotoURL = await usersCollection.find({ name: { $in: instructorIds } }).toArray();
-                // res.send(instructorsWithPhotoURL);
-                const mergedResult = result.map(item => {
-                  const instructor = instructorsWithPhotoURL.find(i => i.name === item._id);
-                  return {
-                    instructorName: item._id,
-                    totalStudentsEnrolled: item.totalStudentsEnrolled,
-                    classCount: item.classCount,
-                    photoURL: instructor ? instructor.photoURL : 'No Image',
-                    email:instructor? instructor.email:'no mail'
-                  };
-                });
-          
-                res.send(mergedResult);
-                console.log(mergedResult);
-              }
             } catch (error) {
-              console.error(error);
-              res.status(500).send("Internal Server Error");
+                console.error(error);
+                res.status(500).send("Internal Server Error");
             }
-          });
-               
-      
-       
+        });
+
+
+
         app.get('/instructors', async (req, res) => {
             const result = await usersCollection.find({ role: "Instructor" }).toArray()
             res.send(result)
@@ -289,7 +315,7 @@ async function run() {
 
         })
 
-        app.get('/allclasses', jwtVerify, verifyInstructor ,async (req, res) => {
+        app.get('/allclasses', jwtVerify, verifyInstructor, async (req, res) => {
             const email = req.query.email;
 
             if (!email) {
