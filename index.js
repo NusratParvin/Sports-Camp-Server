@@ -71,6 +71,35 @@ async function run() {
             // console.log('hit token', token);
         })
         ///////JWT generate ////////
+
+
+        ///////verification middlewares ////////
+
+          const verifyAdmin = async (req, res, next) => {
+            const email = req.decoded.email;
+            console.log(email, 'inside verify1');
+            const query = { email: email }
+            const user = await usersCollection.findOne(query);
+            if (user?.role !== 'Admin') {
+                return res.status(403).send({ error: true, message: 'forbidden message' });
+            }
+            next();
+        }
+
+
+        const verifyInstructor = async (req, res, next) => {
+            const email = req.decoded.email;
+            console.log(email, 'inside verify1');
+            const query = { email: email }
+            const user = await usersCollection.findOne(query);
+            if (user?.role !== 'Instructor') {
+                return res.status(403).send({ error: true, message: 'forbidden message' });
+            }
+            next();
+        }
+        ///////verification middlewares ////////
+        
+
         /////////////// USer related APIs/////////////////////////////////////////////
 
         app.get('/users/role/:email', jwtVerify, async (req, res) => {
@@ -201,6 +230,14 @@ async function run() {
         //     }
         //   });
 
+        app.post('/addClass', jwtVerify,verifyInstructor,async(req,res)=>{
+            const newClass = req.body; 
+            const newClassWithStatus = {...newClass,"Status":"Pending", "studentsEnrolled": parseInt(0)}
+            console.log(newClassWithStatus);
+            const result = await classesCollection.insertOne(newClassWithStatus)
+            res.send(result);
+            console.log(result,'class added');
+        })
 
         app.get('/popInstructors', async (req, res) => {
             try {
@@ -226,10 +263,11 @@ async function run() {
                 const mergedResult = result.map(item => {
                   const instructor = instructorsWithPhotoURL.find(i => i.name === item._id);
                   return {
-                    _id: item._id,
+                    instructorName: item._id,
                     totalStudentsEnrolled: item.totalStudentsEnrolled,
                     classCount: item.classCount,
-                    photoURL: instructor ? instructor.photoURL : null
+                    photoURL: instructor ? instructor.photoURL : 'No Image',
+                    email:instructor? instructor.email:'no mail'
                   };
                 });
           
