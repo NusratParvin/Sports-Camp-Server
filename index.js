@@ -232,7 +232,7 @@ async function run() {
 
         app.post('/addClass', jwtVerify,verifyInstructor,async(req,res)=>{
             const newClass = req.body; 
-            const newClassWithStatus = {...newClass,"Status":"Pending", "studentsEnrolled": parseInt(0)}
+            const newClassWithStatus = {...newClass,"status":"Pending", "studentsEnrolled": parseInt(0)}
             console.log(newClassWithStatus);
             const result = await classesCollection.insertOne(newClassWithStatus)
             res.send(result);
@@ -288,6 +288,24 @@ async function run() {
             console.log(result);
 
         })
+
+        app.get('/allclasses', jwtVerify, verifyInstructor ,async (req, res) => {
+            const email = req.query.email;
+
+            if (!email) {
+                res.send([]);
+            }
+
+            const decodedEmail = req.decoded.email;
+            if (email !== decodedEmail) {
+                return res.status(403).send({ error: true, message: 'forbidden access' })
+            }
+
+            const query = { email: email };
+            const result = await classesCollection.find(query).toArray();
+            res.send(result);
+            console.log(result);
+        });
         /////////////// instructor related APIs/////////////////////////////////////////
 
 
