@@ -154,9 +154,96 @@ async function run() {
             res.send(result)
 
         })
+        
 
-        /////////////// class related APIs/////////////////////////////////////////////
-        /////////////// instructor related APIs/////////////////////////////////////////
+        // app.get('/popInstructors', async (req, res) => {
+        //     try {
+        //       const result = await classesCollection.aggregate([
+        //         {
+        //           $group: {
+        //             _id: "$instructor",
+        //             totalStudentsEnrolled: { $sum: "$studentsEnrolled" },
+        //             classCount: { $sum: 1 } // Add this to count the classes
+        //           }
+        //         },
+        //         {
+        //           $sort: { totalStudentsEnrolled: -1 }
+        //         },
+        //         {
+        //           $lookup: {
+        //             from: "usersCollection",
+        //             localField: "_id",
+        //             foreignField: "name",
+        //             as: "instructorDetails"
+        //           }
+        //         },
+        //         {
+        //           $project: {
+        //             _id: 1,
+        //             totalStudentsEnrolled: 1,
+        //             classCount: 1, // Include the classCount field in the projection
+        //             instructorDetails: {
+        //               $arrayElemAt: ["$instructorDetails", 0]
+        //             }
+        //           }
+        //         }
+        //       ]).toArray();
+          
+        //       if (result.length === 0) {
+        //         res.send("No instructors found");
+        //       } else {
+        //         res.send(result);
+        //         console.log(result,'===================ins==========');
+        //       }
+        //     } catch (error) {
+        //       console.error(error);
+        //       res.status(500).send("Internal Server Error");
+        //     }
+        //   });
+
+
+        app.get('/popInstructors', async (req, res) => {
+            try {
+              const result = await classesCollection.aggregate([
+                {
+                  $group: {
+                    _id: "$instructor",
+                    totalStudentsEnrolled: { $sum: "$studentsEnrolled" },
+                    classCount: { $sum: 1 }
+                  }
+                },
+                {
+                  $sort: { totalStudentsEnrolled: -1 }
+                }
+              ]).toArray();
+          
+              if (result.length === 0) {
+                res.send("No instructors found");
+              } else {
+                const instructorIds = result.map(item => item._id);
+                const instructorsWithPhotoURL = await usersCollection.find({ name: { $in: instructorIds } }).toArray();
+                // res.send(instructorsWithPhotoURL);
+                const mergedResult = result.map(item => {
+                  const instructor = instructorsWithPhotoURL.find(i => i.name === item._id);
+                  return {
+                    _id: item._id,
+                    totalStudentsEnrolled: item.totalStudentsEnrolled,
+                    classCount: item.classCount,
+                    photoURL: instructor ? instructor.photoURL : null
+                  };
+                });
+          
+                res.send(mergedResult);
+                console.log(mergedResult);
+              }
+            } catch (error) {
+              console.error(error);
+              res.status(500).send("Internal Server Error");
+            }
+          });
+               
+      
+       
         app.get('/instructors', async (req, res) => {
             const result = await usersCollection.find({ role: "Instructor" }).toArray()
             res.send(result)
