@@ -102,6 +102,10 @@ async function run() {
 
         /////////////// USer related APIs/////////////////////////////////////////////
 
+        app.get('/users',jwtVerify,verifyAdmin,async(req,res)=>{
+            const result = await usersCollection.find().toArray()
+            res.send(result)
+        })
         app.get('/users/role/:email', jwtVerify, async (req, res) => {
             const email = req.params.email;
 
@@ -115,6 +119,19 @@ async function run() {
             res.send(result);
             // console.log(result, 'isRole');
         })
+
+        app.put('/users/:id',jwtVerify , verifyAdmin, async (req, res) => {
+            const id  = req.params.id;
+            const { role } = req.body;
+          
+              const result = await usersCollection.updateOne(
+                { _id: new ObjectId(id) },
+                { $set: { role } },
+                { upsert: true }
+              );
+          res.send(result)
+          console.log(result);
+          });
 
         app.put('/users/:email', async (req, res) => {
             const email = req.params.email
