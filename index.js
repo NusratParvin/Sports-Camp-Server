@@ -49,13 +49,22 @@ const client = new MongoClient(uri, {
         version: ServerApiVersion.v1,
         strict: true,
         deprecationErrors: true,
-    }
+    },
+    useNewUrlParser:true,
+    useUnifiedTopology:true,
+    maxPoolSize:10,
 });
 
 async function run() {
     try {
         // Connect the client to the server	(optional starting in v4.7)
-        await client.connect();
+        // await client.connect();
+        client.connect((error)=>{
+            if(error){
+                console.log(error);
+                return;
+            }
+        })
 
         const usersCollection = client.db("summerDB").collection("users");
         const classesCollection = client.db("summerDB").collection("classes");
@@ -211,7 +220,7 @@ async function run() {
               .toArray();
             res.send(result);
           });
-          app.get('/classes/admin', async (req, res) => {
+          app.get('/classes/admin',jwtVerify, async (req, res) => {
             const result = await classesCollection.find().toArray()
             res.send(result)
 
@@ -251,50 +260,6 @@ async function run() {
           console.log(result);
           });
 
-        // app.get('/popInstructors', async (req, res) => {
-        //     try {
-        //       const result = await classesCollection.aggregate([
-        //         {
-        //           $group: {
-        //             _id: "$instructor",
-        //             totalStudentsEnrolled: { $sum: "$studentsEnrolled" },
-        //             classCount: { $sum: 1 } // Add this to count the classes
-        //           }
-        //         },
-        //         {
-        //           $sort: { totalStudentsEnrolled: -1 }
-        //         },
-        //         {
-        //           $lookup: {
-        //             from: "usersCollection",
-        //             localField: "_id",
-        //             foreignField: "name",
-        //             as: "instructorDetails"
-        //           }
-        //         },
-        //         {
-        //           $project: {
-        //             _id: 1,
-        //             totalStudentsEnrolled: 1,
-        //             classCount: 1, // Include the classCount field in the projection
-        //             instructorDetails: {
-        //               $arrayElemAt: ["$instructorDetails", 0]
-        //             }
-        //           }
-        //         }
-        //       ]).toArray();
-
-        //       if (result.length === 0) {
-        //         res.send("No instructors found");
-        //       } else {
-        //         res.send(result);
-        //         console.log(result,'===================ins==========');
-        //       }
-        //     } catch (error) {
-        //       console.error(error);
-        //       res.status(500).send("Internal Server Error");
-        //     }
-        //   });
 
         app.post('/addClass', jwtVerify, verifyInstructor, async (req, res) => {
             const newClass = req.body;
@@ -419,22 +384,6 @@ console.log(updatedClassInfo,updateId);
             })
         })
 
-        // app.post('/payments', jwtVerify, async (req, res) => {
-        //     const payment = req.body
-        //     console.log(payment,'payment');
-        //     //payment inserted
-        //     const insertResult = await paymentCollection.insertOne(payment);
-
-        //     //paid class deleted from cart
-        //     const query = { _id: new ObjectId(payment.cartId)}
-        //     const deleteResult = await cartCollection.deleteOne(query)
-
-        //     //class seat decreased by one
-        //     const classId = payment.classId
-
-        //     res.send({ insertResult, deleteResult });
-        //     console.log('success');
-        // })
 
         app.post('/payments', jwtVerify, async (req, res) => {
             const payment = req.body;
@@ -454,9 +403,6 @@ console.log(updatedClassInfo,updateId);
             };
             const classUpdateResult = await classesCollection.updateOne(classQuery, classUpdate, { upsert: true });
 
-
-
-            // Update the status field to 'Paid' in the cart collection
             const cartId = new ObjectId(payment.cartId);
             const cartQuery = { _id: cartId };
             const cartUpdate = {
@@ -477,7 +423,7 @@ console.log(updatedClassInfo,updateId);
 
             const result = await paymentCollection
                 .find({ email: email })
-                .sort({ date: -1 }) // Sort by the 'date' field in descending order
+                .sort({ date: -1 }) 
                 .toArray();
 
             res.send(result);
@@ -502,9 +448,9 @@ run().catch(console.dir);
 
 
 app.get('/', (req, res) => {
-    res.send('Hello World!')
+    res.send('Server check!')
 })
 
 app.listen(port, () => {
-    console.log(`Example app listening on port ${port}`)
+    console.log(`listening on port ${port}`)
 })
