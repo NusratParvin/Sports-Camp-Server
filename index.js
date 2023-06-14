@@ -119,6 +119,19 @@ async function run() {
             res.send(result);
             // console.log(result, 'isRole');
         })
+        app.get('/users/:email', jwtVerify, async (req, res) => {
+            const email = req.params.email;
+
+            if (req.decoded.email !== email) {
+                res.status(401).send({ error: true, message: 'unauthorized access' })
+            }
+
+            const query = { email: email }
+            const result = await usersCollection.findOne(query);
+            
+            res.send(result);
+            // console.log(result, 'isRole');
+        })
 
         app.put('/users/:id',jwtVerify , verifyAdmin, async (req, res) => {
             const id  = req.params.id;
@@ -133,18 +146,20 @@ async function run() {
           console.log(result);
           });
 
-        app.put('/users/:email', async (req, res) => {
-            const email = req.params.email
+          app.post('/users', async (req, res) => {
             const user = req.body
-            const query = { email: email }
-            const options = { upsert: true }
-            const updateDoc = {
-                $set: user,
+            console.log(user, 'user');
+            const query = { email: user.email }
+            const doesExist = await usersCollection.findOne(query)
+            console.log(doesExist, 'doesexist');
+            if (doesExist) {
+                return res.send({ message: 'You already have an account!' })
+
             }
-            const result = await usersCollection.updateOne(query, updateDoc, options)
-            console.log(result)
+            const result = await usersCollection.insertOne(user)
             res.send(result)
         })
+          
 
         /////////////// USer related APIs/////////////////////////////////////////////
         /////////////// Cart related APIs/////////////////////////////////////////////
@@ -191,6 +206,12 @@ async function run() {
 
         /////////////// class related APIs/////////////////////////////////////////////
         app.get('/classes', async (req, res) => {
+            const result = await classesCollection.find({ status: "Approved" })
+              .sort({ _id: -1 }) 
+              .toArray();
+            res.send(result);
+          });
+          app.get('/classes/admin', async (req, res) => {
             const result = await classesCollection.find().toArray()
             res.send(result)
 
@@ -202,6 +223,33 @@ async function run() {
 
         })
 
+
+        app.put('/classes/:id',jwtVerify , verifyAdmin, async (req, res) => {
+            const id  = req.params.id;
+            const { status } = req.body;
+          
+              const result = await classesCollection.updateOne(
+                { _id: new ObjectId(id) },
+                { $set: { status } },
+                { upsert: true }
+              );
+          res.send(result)
+          console.log(result);
+          });
+
+
+        app.put('/classes/feedback/:id',jwtVerify , verifyAdmin, async (req, res) => {
+            const id  = req.params.id;
+            const { feedback } = req.body;
+          
+              const result = await classesCollection.updateOne(
+                { _id: new ObjectId(id) },
+                { $set: { feedback } },
+                { upsert: true }
+              );
+          res.send(result)
+          console.log(result);
+          });
 
         // app.get('/popInstructors', async (req, res) => {
         //     try {
